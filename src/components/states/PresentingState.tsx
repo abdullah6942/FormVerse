@@ -190,7 +190,7 @@ export default function PresentingState() {
                   </div>
                 </div>
                 <p className="text-zinc-300 leading-relaxed">
-                  I've analyzed your requirements and gathered comprehensive insights. Here's what I found:
+                  I&apos;ve analyzed your requirements and gathered comprehensive insights. Here&apos;s what I found:
                 </p>
               </div>
             </div>

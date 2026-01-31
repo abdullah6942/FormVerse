@@ -385,7 +385,7 @@ export const technologyResearchTool = createTool({
         
         // Extract technology name from title (simplified approach)
         const words = title.split(/[\s\-:]/);
-        let techName = words.find((w: string) => 
+        const techName = words.find((w: string) => 
           w.length > 3 && 
           !['Best', 'Top', 'Guide', 'Review', 'Compare', '2024', '2023'].includes(w)
         ) || words[0];
