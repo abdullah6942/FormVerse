@@ -304,7 +304,7 @@ const terminateStep = createStep({
     qualityScore: z.number(),
     recommendations: z.array(z.string()),
   }),
-  execute: async ({ inputData }) => {
+  execute: async ({ inputData, mastra }) => {
     const { researchResults, qualityScore, gaps, userContext } = inputData;
     
     // Compile findings into structured report
@@ -312,7 +312,37 @@ const terminateStep = createStep({
       `### ${r.area.replace(/_/g, ' ').toUpperCase()}\n${r.findings}`
     ).join('\n\n');
     
-    const report = `# Research Report for ${userContext.location.city}, ${userContext.location.country}
+    // Generate intelligent summary based on research content
+    const summaryPrompt = `Based on the following research findings, create a concise, meaningful summary title (max 10-12 words) that captures the essence of what was researched. DO NOT just mention the location. Focus on the actual topic, industry, or business context being researched.
+
+Research Findings:
+${reportSections.substring(0, 1000)}
+
+User Context: ${userContext.location.city}, ${userContext.location.country}
+
+Return ONLY the title text, nothing else. Example formats:
+- "Market Analysis for Women's Fashion Retail in Rawalpindi"
+- "Competitive Landscape Assessment for Tech Startups in Karachi"
+- "Customer Demographics Study for E-commerce Business in Lahore"`;
+
+    let summaryTitle = `Research Report for ${userContext.location.city}, ${userContext.location.country}`;
+    
+    try {
+      if (mastra) {
+        const researcher = mastra.getAgent('researcher');
+        const summaryResponse = await researcher.generate(summaryPrompt);
+        
+        const generatedTitle = summaryResponse.text?.trim();
+        if (generatedTitle && generatedTitle.length > 10) {
+          summaryTitle = generatedTitle;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to generate summary title:', error);
+      // Fall back to default title
+    }
+    
+    const report = `# ${summaryTitle}
 
 ${reportSections}
 

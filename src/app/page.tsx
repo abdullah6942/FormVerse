@@ -184,7 +184,7 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 relative">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 relative pt-8">
             {/* Connection Lines */}
             <div className="hidden lg:block absolute top-1/4 left-1/4 right-1/4 h-0.5 bg-gradient-to-r from-emerald-900/30 via-emerald-500/50 to-emerald-900/30" />
             
@@ -197,7 +197,12 @@ export default function HomePage() {
                 transition={{ duration: 0.7, delay: index * 0.1 }}
                 className="relative"
               >
-                <div className="relative bg-zinc-900/50 backdrop-blur-sm border border-zinc-800 rounded-2xl p-8 hover:border-emerald-900/50 transition-all duration-500 group overflow-hidden">
+                {/* Number badge positioned above card */}
+                <div className="absolute -top-4 left-8 w-10 h-10 bg-emerald-gradient text-white rounded-full flex items-center justify-center font-bold text-base shadow-lg shadow-emerald-500/50 z-20">
+                  {index + 1}
+                </div>
+                
+                <div className="relative bg-zinc-900/50 backdrop-blur-sm border border-zinc-800 rounded-2xl p-8 hover:border-emerald-900/50 transition-all duration-500 group h-full">
                   {/* Gradient overlay on hover */}
                   <div className="opacity-0 group-hover:opacity-100 transition duration-200 absolute inset-0 h-full w-full bg-gradient-to-t from-emerald-950/30 to-transparent pointer-events-none rounded-2xl" />
                   
@@ -205,10 +210,7 @@ export default function HomePage() {
                   <div className="absolute left-0 top-1/2 -translate-y-1/2 h-12 group-hover:h-20 w-1 rounded-r-full bg-zinc-700 group-hover:bg-emerald-500 transition-all duration-200" />
                   
                   <div className="relative z-10">
-                    <div className="absolute -top-12 left-0 w-8 h-8 bg-emerald-gradient text-white rounded-full flex items-center justify-center font-bold text-sm">
-                      {index + 1}
-                    </div>
-                    <div className="w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-lg flex items-center justify-center mb-4 mt-4 group-hover:border-emerald-900 transition-colors duration-200">
+                    <div className="w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-lg flex items-center justify-center mb-4 group-hover:border-emerald-900 transition-colors duration-200">
                       <step.icon className="w-6 h-6 text-zinc-400 group-hover:text-emerald-400 transition-colors duration-200" strokeWidth={1.5} />
                     </div>
                     <h3 className="text-xl font-semibold text-white mb-2 group-hover:translate-x-1 transition duration-200">
