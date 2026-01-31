@@ -76,8 +76,8 @@ export default function AppPage() {
         </div>
         
         {/* Content */}
-        <div className="relative z-10 flex-1 overflow-y-auto">
-          <div className="max-w-3xl mx-auto px-4 py-8">
+        <div className="relative z-10 flex-1 overflow-y-auto px-4">
+          <div className="max-w-3xl mx-auto py-8">
             {currentState === AppState.INTERVIEWING && <InterviewingState />}
             {currentState === AppState.FORM_PREVIEW && <FormPreviewState />}
             {currentState === AppState.FORM_ACTIVE && <FormActiveState />}

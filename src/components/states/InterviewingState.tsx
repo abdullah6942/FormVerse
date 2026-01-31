@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '@/store/app-store';
 import { AppState } from '@/types';
-import { Send, Loader2, Sparkles } from 'lucide-react';
+import { Send, Loader2, Sparkles, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ProgressTimeline from '@/components/ProgressTimeline';
 
@@ -81,6 +81,17 @@ export default function InterviewingState() {
     }
   };
 
+  const handleSuggestionClick = (suggestion: string) => {
+    setInput(suggestion);
+    // Auto-submit after a brief delay to show the text was populated
+    setTimeout(() => {
+      const form = textareaRef.current?.form;
+      if (form) {
+        form.requestSubmit();
+      }
+    }, 100);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -94,15 +105,37 @@ export default function InterviewingState() {
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]">
       {/* Empty State / Messages */}
-      <div className="flex-1 overflow-y-auto pb-32">
+      <div className="flex-1 pb-32">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <h1 className="font-serif text-4xl md:text-5xl text-white mb-4">
               What would you like to <span className="italic text-emerald-400">research</span> today?
             </h1>
-            <p className="text-zinc-400 text-lg max-w-2xl">
+            <p className="text-zinc-400 text-lg max-w-2xl mb-8">
               Tell me about your research needs and I&apos;ll help create a custom form for you.
             </p>
+            
+            {/* Suggestion Chips */}
+            <div className="flex flex-wrap gap-3 justify-center max-w-3xl">
+              <button
+                onClick={() => handleSuggestionClick("I want to find the best CRM software for my startup")}
+                className="px-4 py-2.5 bg-zinc-900/50 hover:bg-zinc-800/50 border border-zinc-700/50 hover:border-emerald-500/50 rounded-xl text-zinc-300 hover:text-white text-sm transition-all"
+              >
+                Find the best CRM for my startup
+              </button>
+              <button
+                onClick={() => handleSuggestionClick("I need to research payment processors for e-commerce")}
+                className="px-4 py-2.5 bg-zinc-900/50 hover:bg-zinc-800/50 border border-zinc-700/50 hover:border-emerald-500/50 rounded-xl text-zinc-300 hover:text-white text-sm transition-all"
+              >
+                Research e-commerce payment processors
+              </button>
+              <button
+                onClick={() => handleSuggestionClick("Help me compare project management tools for remote teams")}
+                className="px-4 py-2.5 bg-zinc-900/50 hover:bg-zinc-800/50 border border-zinc-700/50 hover:border-emerald-500/50 rounded-xl text-zinc-300 hover:text-white text-sm transition-all"
+              >
+                Compare project management tools
+              </button>
+            </div>
           </div>
         ) : (
           <div className="space-y-6 py-8">
@@ -129,6 +162,9 @@ export default function InterviewingState() {
                   {message.role === 'assistant' && (
                     <span className="text-xs text-zinc-500 mb-1">FormVerse</span>
                   )}
+                  {message.role === 'user' && (
+                    <span className="text-xs text-zinc-500 mb-1">You</span>
+                  )}
                   <div
                     className={cn(
                       'max-w-[85%]',
@@ -142,6 +178,14 @@ export default function InterviewingState() {
                     </p>
                   </div>
                 </div>
+
+                {message.role === 'user' && (
+                  <div className="flex-shrink-0">
+                    <div className="w-7 h-7 rounded-full bg-zinc-700/50 border border-zinc-600/50 flex items-center justify-center">
+                      <User className="w-4 h-4 text-zinc-300" strokeWidth={1.5} />
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
             

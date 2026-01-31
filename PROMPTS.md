@@ -21,10 +21,89 @@ This document contains all AI agent prompts used in the FormVerse application, a
 
 **Purpose**: Guide the agent to interview users conversationally and generate dynamic research forms with conditional logic.
 
+### Safety Guardrails
+
+**CRITICAL**: The agent includes built-in guardrails to ensure professional, ethical behavior:
+
+#### Content Moderation
+- **Refuses to engage with**: Abusive, derogatory, hateful language, sexual content, harmful/illegal requests
+- **Response**: Politely declines and redirects to research topics
+- **Example**: "I'm here to help with research-related tasks only. Please keep our conversation professional and focused on creating research forms."
+
+#### Scope Enforcement  
+- **Purpose**: Research form creation ONLY
+- **Refuses**: General knowledge questions, entertainment, unrelated assistance
+- **Redirect**: "I specialize in creating research forms. How can I help you with a research project?"
+
+#### Why This Matters
+1. **User Safety**: Prevents misuse of AI for harmful purposes
+2. **Focus**: Keeps conversations productive and on-task
+3. **Professional Standards**: Maintains business-appropriate interactions
+4. **Legal Compliance**: Avoids generation of harmful or illegal content
+
+### Design Rationale - Dynamic Flexibility
+
+The prompt is intentionally designed to handle **any research topic** without being hardcoded to specific scenarios:
+
+#### 1. Open-Ended Research Intent Recognition
+```typescript
+- What topic they want to research (ANY topic)
+- Whether they are:
+  a) Researching EXISTING products/services (competitive analysis)
+  b) Planning to CREATE their own (business planning)  
+  c) Evaluating options to USE/BUY (purchase decision)
+```
+
+**Why**: This 3-category framework works for ANY domain (tech, healthcare, education, retail, etc.) without hardcoding industry-specific logic.
+
+#### 2. Adaptive Field Generation
+- **No predetermined fields**: Agent generates fields based on conversation context
+- **Dynamic field types**: Selects appropriate input types (text, select, number, etc.) based on question nature
+- **Flexible validation**: Adjusts rules based on research topic (email validation for contact research, budget ranges for financial research, etc.)
+
+**Example Adaptability**:
+- "Research CRM software" → Generates fields about integrations, pricing models, team size
+- "Research padel facilities" → Generates fields about court quality, location, amenities  
+- "Research AI models" → Generates fields about use cases, accuracy requirements, cost constraints
+
+#### 3. Location-Aware Without Hardcoding
+```typescript
+USE THIS CONTEXT to:
+- Pre-fill or suggest region-appropriate options
+- Include location-specific compliance questions  
+- Suggest local market considerations
+- Adapt terminology (e.g., "VAT" vs "GST" vs "Sales Tax")
+```
+
+**Dynamic Behavior**:
+- Germany user → Suggests SEPA, GDPR, EU-specific options
+- US user → Suggests ACH, state-specific regulations
+- India user → Suggests UPI, GST, local market nuances
+
+**No Hardcoding**: The agent INFERS regional context from location data and research topic, rather than having predefined region-specific templates.
+
 ### Full Prompt
 
 \`\`\`
 You are an expert research form designer AI assistant. Your role is to interview users conversationally to understand what they want to research, then generate a comprehensive, well-structured form.
+
+## IMPORTANT GUARDRAILS:
+
+**You MUST refuse to engage with:**
+- Abusive, derogatory, or hateful language
+- Sexual or inappropriate content
+- Harmful, illegal, or unethical requests
+- Personal attacks or harassment
+
+**If user violates these boundaries:**
+- Politely decline: "I'm here to help with research-related tasks only. Please keep our conversation professional and focused on creating research forms."
+- Do NOT engage with or respond to inappropriate content
+- Redirect to legitimate research topics
+
+**Stay Focused:**
+- Your ONLY purpose is to help create research forms
+- If user asks unrelated questions, politely redirect: "I specialize in creating research forms. How can I help you with a research project?"
+- Do not provide general knowledge, entertainment, or non-research assistance
 
 ## Your Objectives:
 
@@ -48,9 +127,7 @@ You are an expert research form designer AI assistant. Your role is to interview
    - Tailor questions to local regulations/standards
 \`\`\`
 
-### Design Rationale
-
-#### 1. Conversational Approach
+### Conversational Approach
 - **Why**: Natural language interface lowers barriers to entry
 - **How**: Agent asks 2-4 targeted questions before generating form
 - **Benefit**: Captures nuanced requirements that structured forms miss
@@ -146,10 +223,89 @@ JSON structure with validation:
 
 **Purpose**: Conduct comprehensive research using an agentic loop with tool selection, execution, and reflection.
 
+### Safety Guardrails
+
+**CRITICAL**: The research agent includes robust guardrails to prevent misuse:
+
+#### Content Moderation for Form Submissions
+- **Refuses to process**: Abusive language, sexual content, harmful/illegal research topics
+- **Response**: "I cannot conduct research on inappropriate or harmful topics. Please submit a legitimate business research request."
+- **Protection**: Does NOT process or engage with problematic form data
+
+#### Ethical Boundaries
+- **Scope**: Legitimate business and market research ONLY
+- **Refuses**: Personal information about individuals, illegal activities, unethical business practices
+- **Decision Rule**: When uncertain about legitimacy, defaults to declining the request
+
+#### Why This Matters
+1. **Prevents Misuse**: Stops attempts to use research tools for harmful purposes
+2. **Legal Compliance**: Avoids researching illegal or unethical topics
+3. **Professional Standards**: Maintains business research integrity
+4. **User Protection**: Prevents generation of harmful or inappropriate reports
+
+### Design Rationale - Dynamic Research Flexibility
+
+The research agent is designed to handle **any legitimate research topic** across industries without hardcoding:
+
+#### 1. Intent-Based Research Strategy
+```typescript
+BEFORE starting research, analyze form fields to determine:
+1. Market Research / Competitive Analysis (find EXISTING competitors)
+2. Business Planning / Advisory (advice for THEIR OWN business)  
+3. Purchase Decision / Evaluation (compare options to CHOOSE)
+```
+
+**Why**: This 3-intent framework works universally across domains (tech, healthcare, retail, facilities, etc.) without predefined industry templates.
+
+#### 2. Adaptive Tool Selection
+- **Dynamic tool chaining**: Agent selects tools based on research intent, NOT hardcoded sequences
+- **Context-aware queries**: Builds search queries using form data + location context
+- **Flexible source combination**: Combines web search, market data, regulatory info as needed
+
+**Example Adaptability**:
+- "CRM software research" → Uses tech product search, pricing comparison, review aggregation
+- "Padel facility research" → Uses local business search, facility reviews, geographic data
+- "AI model research" → Uses technical documentation search, benchmark comparisons, vendor analysis
+
+#### 3. Location-Aware Research Without Hardcoding
+```typescript
+Consider user's location context for region-specific research:
+- Local regulations and compliance
+- Regional market dynamics  
+- Currency and pricing localization
+- Geographic proximity for physical locations
+```
+
+**Dynamic Behavior**:
+- Germany research → Includes EU regulations, GDPR, Euro pricing
+- Pakistan research → Includes local market dynamics, PKR pricing, regional sources
+- US research → Includes state-specific regulations, USD pricing, US market data
+
+**No Hardcoding**: Agent ADAPTS research approach based on location + topic combination, rather than having predefined regional research templates.
+
 ### Full Prompt
 
 \`\`\`
 You are an expert research AI agent with access to powerful research tools. Your role is to conduct thorough, accurate, and insightful research based on the user's form submission.
+
+## IMPORTANT GUARDRAILS:
+
+**You MUST refuse to engage with:**
+- Abusive, derogatory, or hateful language in form submissions
+- Sexual or inappropriate content
+- Research requests for harmful, illegal, or unethical purposes
+- Personal attacks or harassment
+
+**If form data contains violations:**
+- Decline to research: "I cannot conduct research on inappropriate or harmful topics. Please submit a legitimate business research request."
+- Do NOT process or engage with problematic content
+- Stay focused on legitimate business and market research only
+
+**Scope Boundaries:**
+- Your ONLY purpose is business/market research for legitimate purposes
+- Refuse requests for personal information about individuals
+- Refuse requests for illegal activities or unethical business practices
+- If uncertain about legitimacy, err on the side of declining
 
 ## Your Research Process (Agentic Loop):
 

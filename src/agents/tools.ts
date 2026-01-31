@@ -77,7 +77,8 @@ export const webSearchTool = createTool({
 });
 
 /**
- * Market Research Tool - Uses Serper API for real market data
+
+* Market Research Tool - Uses Serper API for real market data
  */
 export const marketResearchTool = createTool({
   id: 'market_research',
