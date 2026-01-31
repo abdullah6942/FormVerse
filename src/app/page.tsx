@@ -368,9 +368,13 @@ export default function HomePage() {
                     href="https://www.clientacquisition.io" 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="text-zinc-400 hover:text-emerald-400 transition-colors text-sm"
+                    className="block hover:opacity-80 transition-opacity"
                   >
-                    Client Acquisition
+                    <img 
+                      src="/clientacquisition-logo.svg" 
+                      alt="Client Acquisition" 
+                      className="h-6"
+                    />
                   </a>
                 </li>
               </ul>
