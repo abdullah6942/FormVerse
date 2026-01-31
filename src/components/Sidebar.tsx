@@ -7,7 +7,12 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import ConfirmDialog from './ConfirmDialog';
 
-export default function Sidebar() {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export default function Sidebar({ isOpen: externalIsOpen = true, onClose }: SidebarProps) {
   const { 
     sessions, 
     currentSessionId, 
@@ -17,7 +22,8 @@ export default function Sidebar() {
     renameSession 
   } = useAppStore();
   
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isOpen = externalIsOpen; // Use prop for desktop, internal state for mobile
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
@@ -32,7 +38,6 @@ export default function Sidebar() {
 
   const handleNewChat = () => {
     createSession('New Research');
-    setIsOpen(false);
   };
 
   const handleRename = (id: string, currentTitle: string) => {
@@ -63,7 +68,6 @@ export default function Sidebar() {
 
   const handleChatClick = (id: string) => {
     loadSession(id);
-    setIsOpen(false);
   };
 
   const sidebarContent = (
@@ -171,19 +175,19 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Mobile Toggle Button */}
+      {/* Mobile Toggle Button - only shown on mobile */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setInternalIsOpen(!internalIsOpen)}
         className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-white"
       >
-        {isOpen ? <X size={20} /> : <Menu size={20} />}
+        {internalIsOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
 
       {/* Mobile Overlay */}
-      {isOpen && (
+      {internalIsOpen && (
         <div
           className="lg:hidden fixed inset-0 bg-black/50 z-40"
-          onClick={() => setIsOpen(false)}
+          onClick={() => setInternalIsOpen(false)}
         />
       )}
 
@@ -191,7 +195,8 @@ export default function Sidebar() {
       <aside
         className={cn(
           'fixed lg:sticky top-0 left-0 h-screen w-80 bg-[#111111] border-r border-zinc-800/50 flex flex-col z-40 transition-transform duration-300',
-          isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          internalIsOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+          !isOpen && 'lg:-translate-x-full'
         )}
       >
         {sidebarContent}

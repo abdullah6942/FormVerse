@@ -17,7 +17,7 @@ export const StateTransitions: Record<AppState, AppState[]> = {
   [AppState.FORM_PREVIEW]: [AppState.INTERVIEWING, AppState.FORM_ACTIVE],
   [AppState.FORM_ACTIVE]: [AppState.FORM_PREVIEW, AppState.RESEARCHING],
   [AppState.RESEARCHING]: [AppState.PRESENTING],
-  [AppState.PRESENTING]: [AppState.INTERVIEWING],
+  [AppState.PRESENTING]: [AppState.INTERVIEWING, AppState.FORM_PREVIEW, AppState.FORM_ACTIVE, AppState.RESEARCHING],
 };
 
 export interface StateLog {

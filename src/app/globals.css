@@ -37,22 +37,32 @@ h1, h2, h3, h4, h5, h6 {
   color: #10b981;
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar - Right side placement */
 ::-webkit-scrollbar {
-  width: 10px;
+  width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background-color: #18181b;
+  background-color: #0a0a0a;
+  border-left: 1px solid #27272a;
 }
 
 ::-webkit-scrollbar-thumb {
   background-color: #3f3f46;
-  border-radius: 9999px;
+  border-radius: 4px;
+  border-left: 1px solid #52525b;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #52525b;
+  background-color: #10b981;
+  border-left-color: #10b981;
+}
+
+/* Glow text effect for timeline */
+.glow-text {
+  text-shadow: 0 0 10px rgba(16, 185, 129, 0.5),
+               0 0 20px rgba(16, 185, 129, 0.3),
+               0 0 30px rgba(16, 185, 129, 0.2);
 }
 
 /* Animations */

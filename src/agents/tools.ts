@@ -3,16 +3,18 @@ import { z } from 'zod';
 
 /**
  * Research Tools for the Agent
+ * Using Serper API for REAL web search and research
  */
 
 /**
- * Web Search Tool - simulates web search using Context7 MCP pattern
+ * Web Search Tool - Uses Serper.dev API for real Google search results
  */
 export const webSearchTool = createTool({
   id: 'web_search',
-  description: 'Searches the web for current information on a specific topic. Returns relevant articles, sources, and snippets with URLs. Use this when you need up-to-date information, news, or facts from the internet. Ideal for general research queries.',
+  description: 'Searches the web for current information on a specific topic. Returns relevant articles, sources, and snippets with REAL URLs from Google Search. Use this when you need up-to-date information, news, or facts from the internet.',
   inputSchema: z.object({
     query: z.string().describe('The search query'),
+    location: z.string().optional().describe('Location to focus search on (e.g., "Islamabad, Pakistan")'),
     maxResults: z.number().optional().default(5).describe('Maximum number of results to return'),
   }),
   outputSchema: z.object({
@@ -24,105 +26,62 @@ export const webSearchTool = createTool({
     })),
   }),
   execute: async (inputData) => {
-    const { query, maxResults } = inputData;
+    const { query, location, maxResults } = inputData;
     
-    // Generate contextual search results based on the query
-    const queryLower = query.toLowerCase();
-    const results = [];
-    
-    // Detect search intent
-    const isCompetitorResearch = queryLower.includes('facilities') || 
-                                  queryLower.includes('competitors') || 
-                                  queryLower.includes('options') ||
-                                  queryLower.includes('compare');
-    
-    const isTechnologySearch = queryLower.includes('software') || 
-                               queryLower.includes('platform') || 
-                               queryLower.includes('tool') ||
-                               queryLower.includes('crm') ||
-                               queryLower.includes('payment');
-    
-    if (isCompetitorResearch) {
-      // Extract location from query if present
-      const locationMatch = query.match(/in\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/);
-      const location = locationMatch ? locationMatch[1] : 'the area';
+    try {
+      // Build location-aware query
+      const searchQuery = location ? `${query} ${location}` : query;
       
-      // Generate realistic competitor listings
-      results.push(
-        {
-          title: `Top 5 ${query.split(' in ')[0]} ${location} - 2026 Guide`,
-          url: `https://localguide.com/${query.replace(/\s+/g, '-').toLowerCase()}`,
-          snippet: `Comprehensive listing of the best facilities ${location.includes('the') ? '' : 'in ' + location}. Includes pricing, amenities, locations, and customer reviews. Updated ${new Date().toLocaleDateString()}.`,
-          relevance: 0.98,
+      // Call Serper API for real Google search results
+      const response = await fetch('https://google.serper.dev/search', {
+        method: 'POST',
+        headers: {
+          'X-API-KEY': process.env.SERPER_API_KEY || '',
+          'Content-Type': 'application/json',
         },
-        {
-          title: `${location} ${query.split(' ')[0]} Directory - Reviews & Ratings`,
-          url: `https://businessdirectory.pk/${query.replace(/\s+/g, '-')}`,
-          snippet: `Find verified ${query.split(' in ')[0]} with real customer reviews, pricing comparisons, and contact information. Filter by location, price range, and services offered.`,
-          relevance: 0.95,
-        },
-        {
-          title: `Market Analysis: ${query} - Current Landscape`,
-          url: `https://marketinsights.com/reports/${query.replace(/\s+/g, '-')}`,
-          snippet: `Industry report analyzing the competitive landscape, market trends, and growth opportunities. Includes detailed competitor profiles and market share data.`,
-          relevance: 0.92,
-        }
-      );
-    } else if (isTechnologySearch) {
-      results.push(
-        {
-          title: `Best ${query} - Expert Review 2026`,
-          url: `https://techreviews.com/best-${query.replace(/\s+/g, '-')}`,
-          snippet: `In-depth comparison of top solutions for ${query}. Features, pricing, pros/cons, and recommendations based on use case and company size.`,
-          relevance: 0.97,
-        },
-        {
-          title: `${query}: Complete Buyer's Guide`,
-          url: `https://softwareadvice.com/guides/${query.replace(/\s+/g, '-')}`,
-          snippet: `Everything you need to know before choosing ${query}. Key features to look for, pricing models, integration capabilities, and vendor comparisons.`,
-          relevance: 0.94,
-        },
-        {
-          title: `User Reviews: ${query} Platforms Compared`,
-          url: `https://g2.com/categories/${query.replace(/\s+/g, '-')}`,
-          snippet: `Real user reviews and ratings from verified customers. See how different solutions stack up on ease of use, features, value for money, and customer support.`,
-          relevance: 0.91,
-        }
-      );
-    } else {
-      // Generic search results
-      results.push(
-        {
-          title: `${query} - Complete Guide 2026`,
-          url: `https://guide.com/${encodeURIComponent(query)}`,
-          snippet: `Comprehensive guide covering ${query}. Learn best practices, common challenges, and expert recommendations for success.`,
-          relevance: 0.93,
-        },
-        {
-          title: `Understanding ${query}: What You Need to Know`,
-          url: `https://knowledge.com/articles/${encodeURIComponent(query)}`,
-          snippet: `Expert analysis and insights about ${query}. Includes real-world examples, case studies, and actionable advice.`,
-          relevance: 0.89,
-        },
-        {
-          title: `${query} - Latest Trends and Insights`,
-          url: `https://trends.com/research/${encodeURIComponent(query)}`,
-          snippet: `Current trends, market analysis, and future outlook for ${query}. Based on recent industry data and expert interviews.`,
-          relevance: 0.86,
-        }
-      );
+        body: JSON.stringify({
+          q: searchQuery,
+          num: maxResults,
+          gl: location?.includes('Pakistan') ? 'pk' : 'us', // Country code
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Serper API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Transform Serper results to our format
+      const results = (data.organic || []).slice(0, maxResults).map((item: any, index: number) => ({
+        title: item.title,
+        url: item.link,
+        snippet: item.snippet || '',
+        relevance: 1 - (index * 0.1), // Decreasing relevance
+      }));
+
+      return { results };
+    } catch (error) {
+      console.error('Web search error:', error);
+      // Fallback to indicate error
+      return {
+        results: [{
+          title: 'Search Error',
+          url: '#',
+          snippet: 'Unable to perform web search. Please try again.',
+          relevance: 0,
+        }],
+      };
     }
-    
-    return { results: results.slice(0, maxResults) };
   },
 });
 
 /**
- * Market Research Tool
+ * Market Research Tool - Uses Serper API for real market data
  */
 export const marketResearchTool = createTool({
   id: 'market_research',
-  description: 'Conducts comprehensive market research on a specific industry, product, or service. Returns market size estimates, growth trends, competitive landscape, and business opportunities. Use this for business analysis, market validation, or competitive intelligence. Can be scoped to specific geographic regions.',
+  description: 'Conducts comprehensive market research using real web data. Returns market insights, trends, competitive landscape, and opportunities based on actual search results.',
   inputSchema: z.object({
     topic: z.string().describe('The market or industry to research'),
     region: z.string().optional().describe('Geographic region to focus on'),
@@ -136,109 +95,66 @@ export const marketResearchTool = createTool({
   execute: async (inputData) => {
     const { topic, region } = inputData;
     
-    // Generate contextual market research based on topic and region
-    const topicLower = topic.toLowerCase();
-    const regionLower = (region || '').toLowerCase();
-    
-    // Detect market type
-    const isPadelOrSports = topicLower.includes('padel') || 
-                           topicLower.includes('sports') || 
-                           topicLower.includes('facility') ||
-                           topicLower.includes('gym');
-    
-    const isTechnology = topicLower.includes('software') || 
-                        topicLower.includes('platform') || 
-                        topicLower.includes('crm') ||
-                        topicLower.includes('payment');
-    
-    let marketData;
-    
-    if (isPadelOrSports && regionLower.includes('pakistan')) {
-      marketData = {
-        marketSize: `The Padel/sports facility market in Pakistan is growing rapidly at 18-22% annually. Islamabad market estimated at PKR 800M-1.2B with 15-20 active facilities.`,
-        trends: [
-          'Rapid growth in popularity, especially among affluent urban populations',
-          'Increasing demand for premium facilities with modern amenities',
-          'Shift towards membership models (monthly/yearly subscriptions)',
-          'Growing interest in corporate packages and team-building events',
-          'Integration of coaching programs and tournaments',
-          'Focus on café/restaurant facilities to increase dwell time and revenue',
-        ],
-        competitors: [
-          'Padel One (F-7, multiple courts, premium pricing, strong brand)',
-          'Sports Arena (Blue Area, 3 courts, mid-range pricing)',
-          'The Padel Club (DHA, 4 courts, membership focus)',
-          'Urban Sports Complex (G-10, mixed sports, 2 padel courts)',
-          'Independent facilities in E-11, F-10, and Bahria Town',
-        ],
-        opportunities: [
-          'Underserved areas: G-sectors, I-sectors lack quality facilities',
-          'Corporate partnerships with tech companies in Blue Area/I-9',
-          'Tournament hosting - growing Padel tournament scene',
-          'Coaching academy - shortage of certified Padel coaches',
-          'Equipment retail - limited specialized Padel equipment retailers',
-          'Off-peak pricing strategies to maximize court utilization',
-        ],
-      };
-    } else if (isTechnology) {
-      const techCategory = topicLower.includes('crm') ? 'CRM' : 
-                          topicLower.includes('payment') ? 'payment processing' :
-                          'business software';
+    try {
+      // Use Serper to get real market data
+      const queries = [
+        `${topic} market size ${region || ''}`,
+        `${topic} market trends ${region || ''}`,
+        `${topic} competitors ${region || ''}`,
+        `${topic} market opportunities ${region || ''}`
+      ];
       
-      marketData = {
-        marketSize: `The ${techCategory} market ${region ? `in ${region}` : 'globally'} is valued at $50-80B with 12-15% CAGR. SMB segment growing fastest at 18-20% annually.`,
-        trends: [
-          'Shift to cloud-based SaaS solutions over on-premise software',
-          'AI integration for automation and predictive analytics',
-          'Mobile-first approach for field teams and remote workers',
-          'Integration ecosystems (APIs, Zapier, native integrations)',
-          'Vertical-specific solutions gaining market share',
-          'Freemium and flexible pricing models becoming standard',
-        ],
-        competitors: [
-          'Enterprise leaders (Salesforce, HubSpot, Microsoft Dynamics)',
-          'Mid-market focused (Pipedrive, Zoho, Freshworks)',
-          'Niche/vertical-specific solutions',
-          'Open-source alternatives (SuiteCRM, EspoCRM)',
-          'Emerging AI-powered startups',
-        ],
-        opportunities: [
-          'Regional localization (language, currency, regulations)',
-          'Industry-specific features and workflows',
-          'Better mobile experiences for field teams',
-          'Affordable solutions for micro-businesses (1-10 employees)',
-          'Integration with local payment gateways and tools',
-          'Strong customer support and onboarding',
-        ],
+      const searchPromises = queries.map(async (query) => {
+        const response = await fetch('https://google.serper.dev/search', {
+          method: 'POST',
+          headers: {
+            'X-API-KEY': process.env.SERPER_API_KEY || '',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            q: query.trim(),
+            num: 3,
+            gl: region?.toLowerCase().includes('pakistan') ? 'pk' : 'us',
+          }),
+        });
+        
+        if (!response.ok) return [];
+        const data = await response.json();
+        return (data.organic || []).slice(0, 3);
+      });
+      
+      const results = await Promise.all(searchPromises);
+      
+      // Extract insights from real search results
+      const marketSize = results[0]?.[0]?.snippet || `Market research for ${topic} ${region ? 'in ' + region : ''} shows growing demand and opportunities.`;
+      
+      const trends = results[1]?.slice(0, 4).map((item: any) => 
+        item.snippet || item.title
+      ).filter(Boolean) || ['Growing market demand', 'Digital transformation', 'Innovation driving growth'];
+      
+      const competitors = results[2]?.slice(0, 5).map((item: any) => 
+        item.title.split('|')[0].split('-')[0].trim()
+      ).filter(Boolean) || ['Market leaders present', 'Competitive landscape active'];
+      
+      const opportunities = results[3]?.slice(0, 4).map((item: any) => 
+        item.snippet || item.title
+      ).filter(Boolean) || ['Market expansion possible', 'Underserved segments exist'];
+      
+      return {
+        marketSize,
+        trends,
+        competitors,
+        opportunities,
       };
-    } else {
-      // Generic market research
-      marketData = {
-        marketSize: `The ${topic} market ${region ? `in ${region}` : 'globally'} is experiencing steady growth with strong demand. Market size varies by segment and region.`,
-        trends: [
-          'Digital transformation accelerating across sectors',
-          'Sustainability and ESG considerations increasingly important',
-          'Consumer preference shifting towards online channels',
-          'Personalization and customization becoming competitive differentiators',
-          'Data-driven decision making and analytics adoption',
-        ],
-        competitors: [
-          'Established market leaders with strong brand recognition',
-          'Innovative startups disrupting traditional models',
-          'Regional players with local market expertise',
-          'International expansion from adjacent markets',
-        ],
-        opportunities: [
-          'Underserved customer segments and niches',
-          'Geographic expansion to emerging markets',
-          'Technology adoption and process automation',
-          'Value-added services and premium offerings',
-          'Strategic partnerships and ecosystem building',
-        ],
+    } catch (error) {
+      console.error('Market research error:', error);
+      return {
+        marketSize: `Unable to fetch current market data for ${topic}.`,
+        trends: ['Market research temporarily unavailable'],
+        competitors: ['Data not available'],
+        opportunities: ['Please try again later'],
       };
     }
-    
-    return marketData;
   },
 });
 
@@ -263,110 +179,125 @@ export const regulatoryResearchTool = createTool({
   execute: async (inputData) => {
     const { industry, region } = inputData;
     
-    // Generate region-specific regulatory information
-    const regionLower = region.toLowerCase();
-    const industryLower = industry.toLowerCase();
-    
-    let regulatoryData;
-    
-    if (regionLower.includes('pakistan')) {
-      // Pakistan-specific regulations
-      if (industryLower.includes('sports') || industryLower.includes('facility') || industryLower.includes('padel')) {
-        regulatoryData = {
-          regulations: [
-            { 
-              name: 'Business License', 
-              description: 'Commercial business license required from local municipal authority', 
-              authority: 'Capital Development Authority (CDA) / Islamabad Capital Territory Administration' 
-            },
-            { 
-              name: 'Fire Safety Compliance', 
-              description: 'Fire safety equipment and emergency exits as per building codes', 
-              authority: 'CDA Building Control' 
-            },
-            { 
-              name: 'Tax Registration', 
-              description: 'NTN (National Tax Number) and sales tax registration if annual revenue > PKR 10M', 
-              authority: 'Federal Board of Revenue (FBR)' 
-            },
-            { 
-              name: 'Environmental Clearance', 
-              description: 'Environmental impact assessment for large-scale facilities', 
-              authority: 'Pakistan Environmental Protection Agency' 
-            },
-          ],
-          compliance: [
-            'Obtain trade license from municipal corporation',
-            'Ensure facility meets building code requirements',
-            'Register with tax authorities (FBR)',
-            'Implement proper waste management system',
-            'Maintain liability insurance coverage',
-            'Follow labor laws for any employees',
-            'Display emergency contact information prominently',
-          ],
-        };
-      } else {
-        // Generic business regulations in Pakistan
-        regulatoryData = {
-          regulations: [
-            { name: 'Business Registration', description: 'Company registration with SECP', authority: 'Securities & Exchange Commission of Pakistan' },
-            { name: 'Tax Compliance', description: 'Income tax and sales tax registration', authority: 'Federal Board of Revenue' },
-            { name: 'Labor Laws', description: 'Compliance with employment regulations', authority: 'Ministry of Labour' },
-          ],
-          compliance: [
-            'Register business entity with SECP or local authority',
-            'Obtain NTN (National Tax Number)',
-            'Comply with labor and employment laws',
-            'Maintain proper accounting records',
-          ],
-        };
+    try {
+      // Detect country code for search
+      const regionLower = region.toLowerCase();
+      let countryCode = 'us';
+      if (regionLower.includes('pakistan') || regionLower.includes('pak')) {
+        countryCode = 'pk';
+      } else if (regionLower.includes('uk') || regionLower.includes('britain')) {
+        countryCode = 'uk';
+      } else if (regionLower.includes('india')) {
+        countryCode = 'in';
+      } else if (regionLower.includes('germany')) {
+        countryCode = 'de';
       }
-    } else if (regionLower.includes('eu') || regionLower.includes('europe') || regionLower.includes('germany')) {
-      regulatoryData = {
-        regulations: [
-          { name: 'GDPR', description: 'General Data Protection Regulation for personal data', authority: 'European Commission' },
-          { name: 'PSD2', description: 'Payment Services Directive 2 for payment processing', authority: 'European Banking Authority' },
-          { name: 'Consumer Rights Directive', description: 'EU consumer protection regulations', authority: 'European Commission' },
-        ],
-        compliance: [
-          'Implement GDPR-compliant data processing',
-          'Maintain privacy policy and cookie consent',
-          'Ensure PSD2 compliance for payments',
-          'Provide right to data portability and deletion',
-        ],
+
+      // Make parallel Serper API calls for different regulatory aspects
+      const [regulationsRes, complianceRes, licensingRes] = await Promise.all([
+        fetch('https://google.serper.dev/search', {
+          method: 'POST',
+          headers: {
+            'X-API-KEY': process.env.SERPER_API_KEY || '',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            q: `${industry} regulations requirements ${region}`,
+            gl: countryCode,
+            num: 5
+          })
+        }),
+        fetch('https://google.serper.dev/search', {
+          method: 'POST',
+          headers: {
+            'X-API-KEY': process.env.SERPER_API_KEY || '',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            q: `${industry} compliance checklist ${region}`,
+            gl: countryCode,
+            num: 5
+          })
+        }),
+        fetch('https://google.serper.dev/search', {
+          method: 'POST',
+          headers: {
+            'X-API-KEY': process.env.SERPER_API_KEY || '',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            q: `${industry} business license registration ${region}`,
+            gl: countryCode,
+            num: 5
+          })
+        })
+      ]);
+
+      const [regulationsData, complianceData, licensingData] = await Promise.all([
+        regulationsRes.json(),
+        complianceRes.json(),
+        licensingRes.json()
+      ]);
+
+      // Extract regulatory information from search results
+      const regulations = [];
+      const organic = regulationsData.organic || [];
+      for (let i = 0; i < Math.min(3, organic.length); i++) {
+        const result = organic[i];
+        regulations.push({
+          name: result.title || 'Regulatory Requirement',
+          description: result.snippet || 'See source for details',
+          authority: result.link || 'Government Authority'
+        });
+      }
+
+      // Extract compliance steps
+      const compliance = [];
+      const complianceResults = complianceData.organic || [];
+      for (const result of complianceResults.slice(0, 4)) {
+        if (result.snippet) {
+          compliance.push(result.snippet);
+        }
+      }
+
+      // Add licensing information to compliance
+      const licensingResults = licensingData.organic || [];
+      for (const result of licensingResults.slice(0, 2)) {
+        if (result.snippet) {
+          compliance.push(result.snippet);
+        }
+      }
+
+      return {
+        regulations: regulations.length > 0 ? regulations : [{
+          name: 'Business Registration',
+          description: 'Register your business with local authorities',
+          authority: 'Local Government'
+        }],
+        compliance: compliance.length > 0 ? compliance : [
+          'Consult with a legal professional for specific requirements',
+          'Research local business registration procedures',
+          'Ensure compliance with tax regulations'
+        ]
       };
-    } else if (regionLower.includes('us') || regionLower.includes('usa') || regionLower.includes('america')) {
-      regulatoryData = {
-        regulations: [
-          { name: 'State Business License', description: 'Business license from state and local authorities', authority: 'State Department of Revenue' },
-          { name: 'ADA Compliance', description: 'Americans with Disabilities Act accessibility requirements', authority: 'US Department of Justice' },
-          { name: 'OSHA', description: 'Occupational Safety and Health Administration workplace safety', authority: 'US Department of Labor' },
-        ],
+
+    } catch (error) {
+      console.error('Regulatory research error:', error);
+      
+      // Fallback data
+      return {
+        regulations: [{
+          name: 'Business Registration',
+          description: 'Register your business with local authorities',
+          authority: 'Local Government'
+        }],
         compliance: [
-          'Register business with state',
-          'Ensure ADA accessibility compliance',
-          'Maintain OSHA workplace safety standards',
-          'Implement proper insurance coverage',
-        ],
-      };
-    } else {
-      // Generic regulations
-      regulatoryData = {
-        regulations: [
-          { name: 'Business License', description: 'Commercial operating license', authority: 'Local Business Authority' },
-          { name: 'Tax Registration', description: 'Tax identification and registration', authority: 'Tax Authority' },
-          { name: 'Industry Standards', description: 'Industry-specific regulations and standards', authority: 'Regulatory Body' },
-        ],
-        compliance: [
-          'Register business with local authorities',
-          'Comply with tax regulations',
-          'Follow industry best practices and standards',
-          'Maintain required insurance coverage',
-        ],
+          'Consult with a legal professional for specific requirements',
+          'Research local business registration procedures',
+          'Ensure compliance with industry-specific regulations'
+        ]
       };
     }
-    
-    return regulatoryData;
   },
 });
 
@@ -392,237 +323,135 @@ export const technologyResearchTool = createTool({
   execute: async (inputData) => {
     const { useCase, category } = inputData;
     
-    const useCaseLower = useCase.toLowerCase();
-    const categoryLower = (category || '').toLowerCase();
-    
-    // Detect technology type
-    const isBusinessSoftware = useCaseLower.includes('crm') || 
-                              useCaseLower.includes('management') ||
-                              useCaseLower.includes('booking') ||
-                              useCaseLower.includes('facility');
-    
-    const isPayment = useCaseLower.includes('payment') || 
-                      useCaseLower.includes('checkout') ||
-                      useCaseLower.includes('billing');
-    
-    let recommendations;
-    
-    if (isBusinessSoftware) {
-      if (useCaseLower.includes('facility') || useCaseLower.includes('booking') || useCaseLower.includes('sports')) {
-        recommendations = [
-          {
-            name: 'Playfinder / CourtReserve',
-            description: 'Specialized facility management and booking systems for sports venues',
-            pros: [
-              'Purpose-built for sports facilities with court booking',
-              'Integrated payment processing and membership management',
-              'Mobile apps for customers to book on the go',
-              'Automated scheduling and conflict prevention',
-              'Reporting and analytics on utilization rates',
-            ],
-            cons: [
-              'Higher monthly cost ($200-500/month)',
-              'Learning curve for staff training',
-              'May require custom integrations for existing systems',
-            ],
-            useCase: 'Best for dedicated sports facilities with 3+ courts and regular members',
+    try {
+      // Make parallel Serper API calls for different aspects of technology research
+      const [solutionsRes, comparisonsRes, reviewsRes] = await Promise.all([
+        fetch('https://google.serper.dev/search', {
+          method: 'POST',
+          headers: {
+            'X-API-KEY': process.env.SERPER_API_KEY || '',
+            'Content-Type': 'application/json'
           },
-          {
-            name: 'SimplyBook.me / Acuity Scheduling',
-            description: 'General-purpose booking systems with customization options',
-            pros: [
-              'More affordable ($10-50/month)',
-              'Easy to set up and use',
-              'Flexible for multiple service types',
-              'Good calendar integrations',
-              'Automated reminders and confirmations',
-            ],
-            cons: [
-              'Not sports-specific, requires customization',
-              'Limited facility/court management features',
-              'Basic reporting compared to specialized tools',
-            ],
-            useCase: 'Best for small facilities or mixed-use venues starting out',
+          body: JSON.stringify({
+            q: `best ${category || 'technology'} for ${useCase} 2024`,
+            num: 6
+          })
+        }),
+        fetch('https://google.serper.dev/search', {
+          method: 'POST',
+          headers: {
+            'X-API-KEY': process.env.SERPER_API_KEY || '',
+            'Content-Type': 'application/json'
           },
-          {
-            name: 'Custom Web Application',
-            description: 'Bespoke solution built with modern frameworks (Next.js, React)',
-            pros: [
-              'Fully customized to exact business needs',
-              'Complete control over features and design',
-              'Can integrate deeply with existing systems',
-              'No monthly per-user fees',
-              'Scalable as business grows',
-            ],
-            cons: [
-              'Higher upfront development cost ($5K-20K)',
-              'Requires ongoing maintenance and updates',
-              'Need technical expertise or developer relationship',
-              'Longer time to market (2-4 months)',
-            ],
-            useCase: 'Best for facilities with unique requirements or long-term vision',
+          body: JSON.stringify({
+            q: `${useCase} ${category || 'technology'} comparison pros cons`,
+            num: 6
+          })
+        }),
+        fetch('https://google.serper.dev/search', {
+          method: 'POST',
+          headers: {
+            'X-API-KEY': process.env.SERPER_API_KEY || '',
+            'Content-Type': 'application/json'
           },
-        ];
-      } else if (useCaseLower.includes('crm')) {
-        recommendations = [
-          {
-            name: 'HubSpot CRM',
-            description: 'Free CRM with powerful features and marketing automation',
-            pros: [
-              'Free tier available with generous limits',
-              'Excellent user interface and ease of use',
-              'Strong email marketing and automation',
-              'Large app marketplace for integrations',
-            ],
-            cons: [
-              'Can get expensive as you scale features',
-              'Some advanced features locked behind paid tiers',
-              'Primarily designed for B2B sales teams',
-            ],
-            useCase: 'Best for SMBs needing full-featured CRM without upfront cost',
-          },
-          {
-            name: 'Pipedrive',
-            description: 'Sales-focused CRM with pipeline visualization',
-            pros: [
-              'Intuitive visual pipeline management',
-              'Affordable pricing ($15-99/user/month)',
-              'Strong mobile apps',
-              'Good automation capabilities',
-            ],
-            cons: [
-              'Limited marketing features',
-              'Basic reporting compared to enterprise tools',
-              'Fewer third-party integrations',
-            ],
-            useCase: 'Best for sales teams focused on deal management',
-          },
-          {
-            name: 'Zoho CRM',
-            description: 'Comprehensive CRM suite with extensive features',
-            pros: [
-              'Very affordable ($14-52/user/month)',
-              'Huge feature set including marketing, support',
-              'Good customization options',
-              'Works well for diverse use cases',
-            ],
-            cons: [
-              'Interface can feel dated',
-              'Steeper learning curve',
-              'Customer support quality varies',
-            ],
-            useCase: 'Best for businesses wanting all-in-one solution at low cost',
-          },
-        ];
-      } else {
-        recommendations = [
-          {
-            name: 'Enterprise Solution',
-            description: `Leading enterprise-grade solution for ${useCase}`,
-            pros: [
-              'Comprehensive feature set and scalability',
-              'Strong vendor support and SLAs',
-              'Extensive integrations and ecosystem',
-              'Enterprise security and compliance',
-            ],
-            cons: [
-              'Higher cost and implementation time',
-              'May include features you don\'t need',
-              'Vendor lock-in considerations',
-            ],
-            useCase: 'Best for large organizations with complex requirements',
-          },
-          {
-            name: 'Mid-Market Solution',
-            description: `Balanced solution optimized for ${useCase}`,
-            pros: [
-              'Good balance of features and cost',
-              'Faster implementation',
-              'Growing integration ecosystem',
-              'Modern user experience',
-            ],
-            cons: [
-              'May lack some enterprise features',
-              'Scaling could require tier upgrades',
-              'Smaller vendor with support limitations',
-            ],
-            useCase: 'Best for growing businesses with standard needs',
-          },
-        ];
+          body: JSON.stringify({
+            q: `${useCase} ${category || 'technology'} recommendations reviews`,
+            num: 6
+          })
+        })
+      ]);
+
+      const [solutionsData, comparisonsData, reviewsData] = await Promise.all([
+        solutionsRes.json(),
+        comparisonsRes.json(),
+        reviewsRes.json()
+      ]);
+
+      // Extract technology recommendations from search results
+      const recommendations = [];
+      const allResults = [
+        ...(solutionsData.organic || []),
+        ...(comparisonsData.organic || []),
+        ...(reviewsData.organic || [])
+      ];
+
+      // Group similar technologies and extract unique recommendations
+      const seenNames = new Set();
+      for (const result of allResults) {
+        if (recommendations.length >= 3) break;
+        
+        const title = result.title || '';
+        const snippet = result.snippet || '';
+        
+        // Extract technology name from title (simplified approach)
+        const words = title.split(/[\s\-:]/);
+        const techName = words.find((w: string) => 
+          w.length > 3 && 
+          !['Best', 'Top', 'Guide', 'Review', 'Compare', '2024', '2023'].includes(w)
+        ) || words[0];
+        
+        if (seenNames.has(techName.toLowerCase())) continue;
+        seenNames.add(techName.toLowerCase());
+        
+        recommendations.push({
+          name: techName,
+          description: snippet.split('.')[0] + '.' || 'Technology solution for ' + useCase,
+          pros: [
+            'Recommended by industry sources',
+            'Suitable for the specified use case',
+            'Has active community and documentation'
+          ],
+          cons: [
+            'Evaluate based on specific requirements',
+            'Consider costs and licensing',
+            'Check compatibility with existing systems'
+          ],
+          useCase: snippet || 'See source for detailed use case information'
+        });
       }
-    } else if (isPayment) {
-      recommendations = [
-        {
-          name: 'Stripe',
-          description: 'Developer-friendly payment processing platform',
+
+      // If we didn't get enough recommendations, add generic ones
+      if (recommendations.length === 0) {
+        recommendations.push({
+          name: 'Industry Standard Solution',
+          description: `Established solution for ${useCase}`,
           pros: [
-            'Excellent developer experience and documentation',
-            'Comprehensive API and SDK support',
-            'Growing global coverage',
-            'Advanced features (subscriptions, connect, radar)',
-          ],
-          cons: [
-            'Limited in some countries (including Pakistan)',
-            'Fees can add up (2.9% + 30¢ per transaction)',
-            'Requires technical integration',
-          ],
-          useCase: 'Best for tech-savvy businesses with global customers',
-        },
-        {
-          name: 'Local Payment Gateway (JazzCash, EasyPaisa)',
-          description: 'Pakistan-specific mobile wallet and payment solutions',
-          pros: [
-            'Widely adopted in Pakistan',
-            'Mobile wallet integration',
-            'Lower barriers for local customers',
-            'Local currency support (PKR)',
-          ],
-          cons: [
-            'Limited to Pakistan market',
-            'Basic API compared to international players',
-            'Less feature-rich than global platforms',
-          ],
-          useCase: 'Best for businesses serving Pakistani market exclusively',
-        },
-      ];
-    } else {
-      recommendations = [
-        {
-          name: 'Modern Solution A',
-          description: `Contemporary solution designed for ${useCase}`,
-          pros: [
-            'Latest technology stack and architecture',
-            'Active development and frequent updates',
-            'Strong community and resources',
-            'Competitive pricing model',
-          ],
-          cons: [
-            'Newer platform, less battle-tested',
-            'Smaller ecosystem compared to established players',
-            'May lack some legacy integrations',
-          ],
-          useCase: 'Best for forward-thinking projects prioritizing modern tech',
-        },
-        {
-          name: 'Established Solution B',
-          description: `Proven, reliable option for ${useCase}`,
-          pros: [
-            'Industry standard with long track record',
+            'Widely adopted and proven',
             'Extensive documentation and support',
-            'Large integration marketplace',
-            'Enterprise-ready features',
+            'Large ecosystem and integrations'
           ],
           cons: [
-            'Can feel dated in user experience',
-            'Higher licensing costs',
-            'Slower to adopt new technologies',
+            'May have higher costs',
+            'Could include unnecessary features',
+            'Evaluate specific requirements'
           ],
-          useCase: 'Best for risk-averse organizations valuing stability',
-        },
-      ];
+          useCase: 'Suitable for most standard use cases'
+        });
+      }
+
+      return { recommendations };
+
+    } catch (error) {
+      console.error('Technology research error:', error);
+      
+      // Fallback data
+      return {
+        recommendations: [{
+          name: 'Research Required',
+          description: `Technology solution for ${useCase}`,
+          pros: [
+            'Consult with technical experts',
+            'Research latest industry trends',
+            'Compare multiple solutions'
+          ],
+          cons: [
+            'Unable to fetch real-time recommendations',
+            'Verify information with current sources'
+          ],
+          useCase: 'Evaluate based on specific project requirements'
+        }]
+      };
     }
-    
-    return { recommendations };
   },
 });
 

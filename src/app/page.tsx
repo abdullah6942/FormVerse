@@ -89,10 +89,10 @@ export default function HomePage() {
           >
             <HoverBorderGradient
               containerClassName="rounded-full inline-flex mb-8"
-              className="items-center gap-2 px-4 py-1.5 bg-zinc-900 border border-zinc-800 text-sm text-zinc-300"
+              className="flex items-center gap-2 px-4 py-1.5 bg-zinc-900 border border-zinc-800 text-sm text-zinc-300"
             >
               <Sparkles className="w-4 h-4" strokeWidth={1.5} />
-              Powered by Advanced AI Agents
+              <span>Powered by Advanced AI Agents</span>
             </HoverBorderGradient>
             
             <h1 className="font-serif text-5xl md:text-7xl text-white mb-6 leading-tight">

@@ -35,34 +35,55 @@ const planStep = createStep({
   execute: async ({ inputData }) => {
     const { formData, userContext } = inputData;
     
-    // Extract key areas from form that need research
-    const areasToInvestigate: string[] = [];
+    // Deep analysis of form data to extract requirements
+    const requirements: Record<string, any> = {};
     const formStr = JSON.stringify(formData, null, 2);
     
-    // Identify what to research based on form content
-    if (formStr.toLowerCase().includes('market') || formStr.toLowerCase().includes('business')) {
+    // Extract all form fields as requirements
+    Object.entries(formData).forEach(([key, value]) => {
+      if (value && String(value).trim()) {
+        requirements[key] = value;
+      }
+    });
+    
+    // Identify research areas based on form content
+    const areasToInvestigate: string[] = [];
+    
+    if (formStr.toLowerCase().includes('market') || formStr.toLowerCase().includes('business') || 
+        formStr.toLowerCase().includes('industry') || formStr.toLowerCase().includes('competitor')) {
       areasToInvestigate.push('market_research');
     }
-    if (formStr.toLowerCase().includes('regulation') || formStr.toLowerCase().includes('legal') || formStr.toLowerCase().includes('compliance')) {
+    if (formStr.toLowerCase().includes('regulation') || formStr.toLowerCase().includes('legal') || 
+        formStr.toLowerCase().includes('compliance') || formStr.toLowerCase().includes('license')) {
       areasToInvestigate.push('regulatory_research');
     }
-    if (formStr.toLowerCase().includes('technolog') || formStr.toLowerCase().includes('platform') || formStr.toLowerCase().includes('software')) {
+    if (formStr.toLowerCase().includes('technolog') || formStr.toLowerCase().includes('platform') || 
+        formStr.toLowerCase().includes('software') || formStr.toLowerCase().includes('tool')) {
       areasToInvestigate.push('technology_research');
     }
-    if (areasToInvestigate.length === 0) {
-      areasToInvestigate.push('web_search');
-    }
     
-    const researchPlan = `Research Plan for ${userContext.location.city}, ${userContext.location.country}:
-1. Analyze form data structure and identify key topics
-2. Investigate: ${areasToInvestigate.join(', ')}
-3. Gather location-specific insights
-4. Compile findings into actionable recommendations`;
+    // Always include web search for general research
+    areasToInvestigate.push('web_search');
+    
+    const researchPlan = `Comprehensive Research Plan for ${userContext.location.city}, ${userContext.location.country}:
+
+USER REQUIREMENTS EXTRACTED:
+${Object.entries(requirements).map(([k, v]) => `  - ${k}: ${v}`).join('\n')}
+
+RESEARCH STRATEGY:
+1. Extract and validate ALL user requirements from form
+2. Conduct ${areasToInvestigate.length} parallel research streams: ${areasToInvestigate.join(', ')}
+3. Find location-specific data for ${userContext.location.city}, ${userContext.location.country}
+4. Benchmark against competitors/alternatives
+5. Identify pricing models and cost structures
+6. Research real-world user experiences and reviews
+7. Flag risks and validation gaps
+8. Compile actionable recommendations with sources`;
 
     return {
       researchPlan,
       areasToInvestigate,
-      formData,
+      formData: requirements, // Pass cleaned requirements
       userContext,
     };
   },
@@ -98,32 +119,81 @@ const executeStep = createStep({
     
     const researcher = mastra.getAgent('researcher');
     
-    // Build context-aware prompt directly here
+    // Build context-aware prompt with location and requirements
     const location = userContext.location;
+    const locationString = `${location.city}, ${location.region}, ${location.country}`;
+    
+    // Format requirements clearly
+    const requirementsList = Object.entries(formData)
+      .map(([key, value]) => `  • ${key}: ${value}`)
+      .join('\n');
+    
     const contextPrompt = `
-You are conducting research for a project in ${location.city}, ${location.region}, ${location.country}.
+You are a comprehensive research analyst creating a DETAILED business research report.
 
-FORM DATA:
-${JSON.stringify(formData, null, 2)}
+LOCATION CONTEXT: ${locationString}
 
-RESEARCH AREAS:
-${areasToInvestigate.join(', ')}
+USER'S SPECIFIC REQUIREMENTS:
+${requirementsList}
 
-Please conduct comprehensive research on these topics, considering the local context.
-Use your available tools to gather market research, regulatory information, and technology insights.
-Focus on information specific to ${location.city} and ${location.country}.
+YOUR TASK: Create a comprehensive, multi-section research report that includes:
 
-Provide detailed findings with actionable insights.
+1. **EXECUTIVE SUMMARY**: Brief overview (2-3 sentences) of what the user wants and the market opportunity
+
+2. **KEY FINDINGS**: 4-6 numbered, specific findings with data points. Each finding should:
+   - Be concrete and actionable
+   - Include specific names, numbers, or examples
+   - Reference real sources or competitors
+   Example: "The Pad (E-11) is repeatedly recommended in ${location.city} community discussion for clean courts, good bouncing surfaces, and online booking."
+
+3. **REQUIREMENTS VALIDATION**: For EACH requirement the user specified, state:
+   - What you found that validates it (with specific examples)
+   - What you couldn't validate (gaps in data)
+   - Specific recommendations for verification
+
+4. **COMPETITIVE LANDSCAPE / BENCHMARKS**: If applicable, list 2-3 specific competitors or alternatives with:
+   - Names and locations
+   - How they compare to user requirements (scoring)
+   - Key differentiators
+
+5. **PRICING INSIGHTS**: If relevant, provide:
+   - Specific price points or ranges found in research
+   - Different pricing tiers or models
+   - Cost drivers and hidden costs to consider
+
+6. **REAL-WORLD SIGNALS**: Include any:
+   - Community feedback (Reddit, forums)
+   - User reviews or testimonials
+   - Expert opinions or articles
+   Quote specific sources with enough detail to verify
+
+7. **RISKS & VALIDATION GAPS**: Explicitly call out:
+   - What data conflicts or is uncertain
+   - What requires on-site verification
+   - Critical assumptions that need validation
+
+8. **SOURCES & REFERENCES**: List actual URLs and sources found, with descriptions
+
+CRITICAL INSTRUCTIONS:
+- Use your research tools (web_search, market_research, regulatory_research, technology_research)
+- ALWAYS pass location="${locationString}" to your tools
+- Find REAL, SPECIFIC examples (company names, prices, locations, etc.)
+- Don't make up data - if you can't find something, say so in "Risks & Validation Gaps"
+- Use markdown formatting (##, ###, **, -, etc.) for structure
+- Be detailed - aim for 800+ words total
+- Reference actual URLs and sources you find
+
+Begin your research now and compile a comprehensive report.
 `;
     
     // Execute research using agent with tools
     const response = await researcher.generate(contextPrompt);
     
-    // Structure the results by area
-    const researchResults = areasToInvestigate.map((area) => ({
-      area,
+    // Structure the results
+    const researchResults = [{
+      area: 'comprehensive_research',
       findings: response.text,
-    }));
+    }];
     
     return {
       researchResults,
@@ -160,31 +230,45 @@ const reflectStep = createStep({
     userContext: z.any(),
   }),
   execute: async ({ inputData }) => {
-    const { researchResults } = inputData;
+    const { researchResults, userContext } = inputData;
     
-    // Evaluate quality based on content
-    let qualityScore = 0.5; // Start at 50%
+    // Evaluate quality based on content depth
+    let qualityScore = 0.3; // Start at 30%
     const gaps: string[] = [];
     
-    // Check if we have substantial findings
-    const totalFindings = researchResults.reduce((acc, r) => acc + r.findings.length, 0);
-    if (totalFindings > 500) qualityScore += 0.2;
-    if (totalFindings > 1000) qualityScore += 0.2;
+    const findings = researchResults[0]?.findings || '';
+    
+    // Check length and detail
+    if (findings.length > 500) qualityScore += 0.1;
+    if (findings.length > 1000) qualityScore += 0.1;
+    if (findings.length > 2000) qualityScore += 0.1;
+    
+    // Check for structured sections
+    const hasSections = findings.includes('## ') || findings.includes('### ');
+    if (hasSections) qualityScore += 0.1;
+    
+    // Check for specific data points (numbers, percentages, prices)
+    const hasNumbers = /\d+/.test(findings);
+    if (hasNumbers) qualityScore += 0.1;
     
     // Check for location-specific information
-    const hasLocationInfo = researchResults.some(r => 
-      r.findings.toLowerCase().includes(inputData.userContext.location.city.toLowerCase()) ||
-      r.findings.toLowerCase().includes(inputData.userContext.location.country.toLowerCase())
-    );
+    const hasLocationInfo = 
+      findings.toLowerCase().includes(userContext.location.city.toLowerCase()) ||
+      findings.toLowerCase().includes(userContext.location.country.toLowerCase());
     if (hasLocationInfo) qualityScore += 0.1;
     
-    // For this implementation, we'll consider research complete after one iteration
-    // In a production system, you might loop back to executeStep if quality is low
-    const isComplete = qualityScore >= 0.5; // Accept if quality is at least 50%
+    // Check for sources/references
+    const hasSources = findings.toLowerCase().includes('source') || 
+                      findings.toLowerCase().includes('http') ||
+                      findings.toLowerCase().includes('reference');
+    if (hasSources) qualityScore += 0.1;
     
-    if (!isComplete) {
-      gaps.push('Insufficient location-specific information');
-    }
+    // Quality checks
+    if (!hasLocationInfo) gaps.push('Limited location-specific information');
+    if (!hasSources) gaps.push('Few or no source citations');
+    if (findings.length < 1000) gaps.push('Research depth could be improved');
+    
+    const isComplete = qualityScore >= 0.5; // Accept if quality is at least 50%
     
     return {
       isComplete,
