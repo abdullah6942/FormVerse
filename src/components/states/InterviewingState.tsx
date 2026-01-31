@@ -5,27 +5,27 @@ import { useAppStore } from '@/store/app-store';
 import { AppState } from '@/types';
 import { Send, Loader2, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import ProgressTimeline from '@/components/ProgressTimeline';
 
 export default function InterviewingState() {
   const { messages, addMessage, setFormStructure, transitionState, userContext } = useAppStore();
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingForm, setIsGeneratingForm] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Send initial greeting if no messages
+  // Auto-resize textarea
   useEffect(() => {
-    if (messages.length === 0) {
-      addMessage(
-        'assistant',
-        "Hi! I'm your AI research assistant. I'll help you create a custom research form tailored to your needs. To get started, tell me what you'd like to research. For example: 'I want to research the best CRM for my startup' or 'I need information about payment processors for e-commerce.'"
-      );
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 200) + 'px';
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [input]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,14 +52,23 @@ export default function InterviewingState() {
       const data = await response.json();
 
       if (data.success) {
-        addMessage('assistant', data.response);
-
         // Check if form structure was generated
         if (data.formStructure) {
+          // Show only the message, not the JSON
+          const messageWithoutJSON = data.response.split('```json')[0].trim();
+          addMessage('assistant', messageWithoutJSON);
+          
+          // Show form generation loading state
+          setIsGeneratingForm(true);
           setFormStructure(data.formStructure);
+          
+          // Delay to show loading animation
           setTimeout(() => {
             transitionState(AppState.FORM_PREVIEW);
-          }, 1000);
+            setIsGeneratingForm(false);
+          }, 1500);
+        } else {
+          addMessage('assistant', data.response);
         }
       } else {
         addMessage('assistant', 'Sorry, I encountered an error. Please try again.');
@@ -75,7 +84,10 @@ export default function InterviewingState() {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSubmit(e);
+      const form = e.currentTarget.form;
+      if (form) {
+        form.requestSubmit();
+      }
     }
   };
 
@@ -147,6 +159,23 @@ export default function InterviewingState() {
               </div>
             )}
             
+            {isGeneratingForm && (
+              <div className="flex gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-7 h-7 rounded-full bg-emerald-gradient flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 text-white" strokeWidth={1.5} />
+                  </div>
+                </div>
+                <div>
+                  <span className="text-xs text-zinc-500 mb-1 block">FormVerse</span>
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-5 h-5 text-emerald-400 animate-spin" />
+                    <span className="text-sm text-zinc-300">Generating your custom form...</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div ref={messagesEndRef} />
           </div>
         )}
@@ -158,13 +187,14 @@ export default function InterviewingState() {
           <form onSubmit={handleSubmit} className="relative">
             <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-700/50 rounded-3xl shadow-2xl shadow-black/50">
               <textarea
+                ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Message FormVerse..."
                 disabled={isLoading}
                 rows={1}
-                className="w-full bg-transparent border-none text-white placeholder:text-zinc-500 focus:ring-0 py-4 px-6 pr-14 resize-none outline-none disabled:cursor-not-allowed"
+                className="w-full bg-transparent border-none text-white placeholder:text-zinc-500 focus:ring-0 py-4 px-6 pr-14 resize-none outline-none disabled:cursor-not-allowed overflow-hidden"
                 style={{ minHeight: '56px', maxHeight: '200px' }}
               />
               <button
@@ -181,6 +211,9 @@ export default function InterviewingState() {
           </form>
         </div>
       </div>
+
+      {/* Progress Timeline */}
+      <ProgressTimeline />
     </div>
   );
 }

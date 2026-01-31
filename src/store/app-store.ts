@@ -261,6 +261,38 @@ export const useAppStore = create<AppStore>()(
             metadata,
           };
           
+          const { messages, currentSessionId, sessions } = get();
+          
+          // Generate title on the second user message (after greeting, when they state their research topic)
+          const userMessageCount = messages.filter(m => m.role === 'user').length;
+          if (role === 'user' && userMessageCount === 1) {
+            // Generate title asynchronously
+            fetch('/api/chat', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                messages: [{
+                  role: 'user',
+                  content: `Create a short title (max 5 words) summarizing what the user wants to research or build. User's message: "${content}". Respond with ONLY the title in plain text, no quotes or punctuation at the end. Examples: "Padel Court Business" or "CRM Software Comparison" or "E-commerce Payment Options"`
+                }],
+              }),
+            })
+            .then(res => res.json())
+            .then(data => {
+              if (data.success && data.response) {
+                const title = data.response.replace(/['"]/g, '').trim();
+                get().renameSession(currentSessionId!, title);
+              }
+            })
+            .catch(() => {
+              // Fallback to truncated message
+              const truncatedTitle = content.length > 50 
+                ? content.substring(0, 50) + '...' 
+                : content;
+              get().renameSession(currentSessionId!, truncatedTitle);
+            });
+          }
+          
           set((state) => ({
             messages: [...state.messages, message],
           }));
@@ -316,6 +348,30 @@ export const useAppStore = create<AppStore>()(
           currentSessionId: state.currentSessionId,
           userContext: state.userContext,
         }),
+        onRehydrateStorage: () => (state) => {
+          // Recreate state machines for all sessions after loading from storage
+          if (state?.sessions) {
+            state.sessions = state.sessions.map(session => ({
+              ...session,
+              stateMachine: new StateMachine(session.currentState),
+              lastUpdated: new Date(session.lastUpdated),
+            }));
+
+            // Reload the current session to update the state
+            if (state.currentSessionId) {
+              const currentSession = state.sessions.find(s => s.id === state.currentSessionId);
+              if (currentSession) {
+                state.currentState = currentSession.currentState;
+                state.stateHistory = currentSession.stateHistory;
+                state.messages = currentSession.messages;
+                state.formStructure = currentSession.formStructure;
+                state.formData = currentSession.formData;
+                state.researchResult = currentSession.researchResult;
+                state.isResearching = currentSession.isResearching;
+              }
+            }
+          }
+        },
       }
     ),
     {

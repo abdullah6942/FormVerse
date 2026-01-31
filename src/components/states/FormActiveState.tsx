@@ -5,6 +5,7 @@ import { useAppStore } from '@/store/app-store';
 import { AppState, FieldType, type FormField } from '@/types';
 import { ArrowLeft, ArrowRight, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import ProgressTimeline from '@/components/ProgressTimeline';
 
 export default function FormActiveState() {
   const { formStructure, formData, updateFormData, transitionState } = useAppStore();
@@ -93,13 +94,13 @@ export default function FormActiveState() {
   const visibleFields = formStructure.fields.filter(shouldShowField);
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8">
+    <div className="max-w-4xl mx-auto py-8">
+      <div className="bg-zinc-900/50 backdrop-blur-sm border border-zinc-800 rounded-2xl shadow-2xl p-8">
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+          <h2 className="text-3xl font-bold text-white mb-2">
             {formStructure.title}
           </h2>
-          <p className="text-gray-600 text-lg">
+          <p className="text-zinc-400 text-lg">
             {formStructure.description}
           </p>
         </div>
@@ -107,13 +108,13 @@ export default function FormActiveState() {
         <div className="space-y-6 mb-8">
           {visibleFields.map((field) => (
             <div key={field.id} className="animate-slide-in">
-              <label className="block text-sm font-medium text-gray-900 mb-2">
+              <label className="block text-sm font-medium text-white mb-2">
                 {field.label}
-                {field.required && <span className="text-red-500 ml-1">*</span>}
+                {field.required && <span className="text-emerald-400 ml-1">*</span>}
               </label>
               
               {field.helpText && (
-                <p className="text-sm text-gray-600 mb-2">{field.helpText}</p>
+                <p className="text-sm text-zinc-400 mb-2">{field.helpText}</p>
               )}
 
               {renderField(field, formData[field.id], (value) => {
@@ -129,7 +130,7 @@ export default function FormActiveState() {
               })}
 
               {errors[field.id] && (
-                <div className="flex items-center gap-2 mt-2 text-red-600 text-sm">
+                <div className="flex items-center gap-2 mt-2 text-red-400 text-sm">
                   <AlertCircle className="w-4 h-4" />
                   <span>{errors[field.id]}</span>
                 </div>
@@ -138,24 +139,27 @@ export default function FormActiveState() {
           ))}
         </div>
 
-        <div className="flex items-center justify-between pt-6 border-t border-gray-200">
+        <div className="flex items-center justify-between pt-6 border-t border-zinc-800">
           <button
             onClick={handleBack}
-            className="flex items-center gap-2 px-6 py-3 text-gray-700 hover:text-gray-900 font-medium"
+            className="flex items-center gap-2 px-6 py-3 text-zinc-300 hover:text-white font-medium transition-colors"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-5 h-5" strokeWidth={1.5} />
             Back to Preview
           </button>
 
           <button
             onClick={handleSubmit}
-            className="flex items-center gap-2 px-8 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium shadow-sm"
+            className="flex items-center gap-2 px-8 py-3 bg-emerald-gradient text-white rounded-xl hover:shadow-lg hover:shadow-emerald-500/20 font-medium transition-all"
           >
             Submit & Research
-            <ArrowRight className="w-5 h-5" />
+            <ArrowRight className="w-5 h-5" strokeWidth={1.5} />
           </button>
         </div>
       </div>
+
+      {/* Progress Timeline */}
+      <ProgressTimeline />
     </div>
   );
 }
@@ -163,8 +167,8 @@ export default function FormActiveState() {
 function renderField(field: FormField, value: any, onChange: (value: any) => void) {
   const baseInputClass = cn(
     'w-full px-4 py-3 border rounded-lg outline-none transition-all',
-    'focus:border-primary-500 focus:ring-2 focus:ring-primary-200',
-    'border-gray-300'
+    'bg-zinc-950/50 border-zinc-700 text-white placeholder:text-zinc-500',
+    'focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20'
   );
 
   switch (field.type) {
@@ -222,9 +226,9 @@ function renderField(field: FormField, value: any, onChange: (value: any) => voi
                     onChange(currentValue.filter((v: string) => v !== opt));
                   }
                 }}
-                className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
+                className="w-4 h-4 rounded border-zinc-700 bg-zinc-950/50 text-emerald-500 focus:ring-emerald-500/20"
               />
-              <span className="text-gray-900">{opt}</span>
+              <span className="text-zinc-300">{opt}</span>
             </label>
           ))}
         </div>
@@ -241,9 +245,9 @@ function renderField(field: FormField, value: any, onChange: (value: any) => voi
                 value={opt}
                 checked={value === opt}
                 onChange={(e) => onChange(e.target.value)}
-                className="w-4 h-4 text-primary-600 focus:ring-primary-500"
+                className="w-4 h-4 border-zinc-700 bg-zinc-950/50 text-emerald-500 focus:ring-emerald-500/20"
               />
-              <span className="text-gray-900">{opt}</span>
+              <span className="text-zinc-300">{opt}</span>
             </label>
           ))}
         </div>
@@ -274,18 +278,18 @@ function renderField(field: FormField, value: any, onChange: (value: any) => voi
     
     case FieldType.CHECKBOX:
       return (
-        <label className="flex items-center gap-2 cursor-pointer">
+        <label className="flex items-center gap-3 cursor-pointer">
           <input
             type="checkbox"
             checked={value || false}
             onChange={(e) => onChange(e.target.checked)}
-            className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
+            className="w-4 h-4 rounded border-zinc-700 bg-zinc-950/50 text-emerald-500 focus:ring-emerald-500/20"
           />
-          <span className="text-gray-900">{field.placeholder}</span>
+          <span className="text-zinc-300">{field.placeholder}</span>
         </label>
       );
     
     default:
-      return <div className="text-gray-500">Unsupported field type: {field.type}</div>;
+      return <div className="text-zinc-500">Unsupported field type: {field.type}</div>;
   }
 }
