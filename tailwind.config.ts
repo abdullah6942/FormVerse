@@ -9,6 +9,16 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        background: '#0a0a0a',
+        foreground: '#ffffff',
+        emerald: {
+          450: '#10b981',
+          glow: 'rgba(16, 185, 129, 0.15)',
+        },
+        zinc: {
+          850: '#1f1f1f',
+          950: '#0f0f0f',
+        },
         primary: {
           50: '#f0f9ff',
           100: '#e0f2fe',
@@ -36,7 +46,12 @@ const config: Config = {
       },
       fontFamily: {
         sans: ['var(--font-inter)', 'system-ui', '-apple-system', 'sans-serif'],
+        serif: ['var(--font-playfair)', 'serif'],
         display: ['Cal Sans', 'var(--font-inter)', 'system-ui', 'sans-serif'],
+      },
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(circle at 50% 0%, rgba(16,185,129,0.15), transparent 50%)',
+        'emerald-gradient': 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
       },
     },
   },
