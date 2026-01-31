@@ -1,6 +1,6 @@
 # Quick Setup Guide
 
-Get your ResearchForm AI application running in 5 minutes!
+Get your FormVerse application running in 5 minutes!
 
 ## Prerequisites Check
 

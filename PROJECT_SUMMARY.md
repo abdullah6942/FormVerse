@@ -1,4 +1,4 @@
-# Project Summary - ResearchForm AI
+# Project Summary - FormVerse
 
 **AI Engineer Take-Home Assignment - Complete Implementation**
 

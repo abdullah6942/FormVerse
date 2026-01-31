@@ -1,4 +1,4 @@
-# Contributing to ResearchForm AI
+# Contributing to FormVerse
 
 Thank you for your interest in contributing to this project!
 

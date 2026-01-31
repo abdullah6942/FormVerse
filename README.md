@@ -1,4 +1,4 @@
-# ResearchForm AI - Multi-Step Form Builder with Research Capabilities
+# FormVerse - Multi-Step Form Builder with Research Capabilities
 
 > **Built for**: AI Engineer Take-Home Assignment  
 > **Tech Stack**: Next.js 15, Mastra, TypeScript, Tailwind CSS, Zustand  

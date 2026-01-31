@@ -2,118 +2,123 @@
 
 import { useState } from 'react';
 import { useAppStore } from '@/store/app-store';
-import { MapPin, Edit2, Check, X } from 'lucide-react';
+import { MapPin, Search, Sun } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function LocationOverride() {
   const { userContext, setUserContext } = useAppStore();
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedLocation, setEditedLocation] = useState({
-    city: '',
-    region: '',
-    country: '',
-  });
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const handleEdit = () => {
-    if (userContext) {
-      setEditedLocation({
-        city: userContext.location.city,
-        region: userContext.location.region,
-        country: userContext.location.country,
-      });
-      setIsEditing(true);
+  const handleAutoDetect = async () => {
+    try {
+      const response = await fetch('/api/location');
+      const data = await response.json();
+      
+      if (data.success && userContext) {
+        setUserContext({
+          ...userContext,
+          location: {
+            ...data.location,
+            isOverridden: false,
+          },
+        });
+        setIsOpen(false);
+      }
+    } catch (error) {
+      console.error('Failed to auto-detect location:', error);
     }
   };
 
-  const handleSave = async () => {
+  const handleSearchSelect = (city: string) => {
     if (!userContext) return;
 
-    const newLocation = {
-      ...userContext.location,
-      city: editedLocation.city,
-      region: editedLocation.region,
-      country: editedLocation.country,
-      isOverridden: true,
-    };
-
-    // Update local state
     setUserContext({
       ...userContext,
-      location: newLocation,
+      location: {
+        ...userContext.location,
+        city,
+        isOverridden: true,
+      },
     });
-
-    setIsEditing(false);
-  };
-
-  const handleCancel = () => {
-    setIsEditing(false);
+    setIsOpen(false);
+    setSearchQuery('');
   };
 
   if (!userContext) return null;
 
+  // Mock cities for search - in real app would be API call
+  const cities = ['Islamabad', 'Karachi', 'Lahore', 'Dubai', 'London', 'New York'];
+  const filteredCities = searchQuery 
+    ? cities.filter(city => city.toLowerCase().includes(searchQuery.toLowerCase()))
+    : [];
+
   return (
-    <div className={cn(
-      "flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors",
-      userContext.location.isOverridden 
-        ? "bg-amber-50 text-amber-900 border border-amber-200"
-        : "bg-gray-50 text-gray-700 border border-gray-200"
-    )}>
-      <MapPin className="w-4 h-4 flex-shrink-0" />
-      
-      {!isEditing ? (
+    <div className="relative">
+      {/* Location Button */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all border",
+          userContext.location.isOverridden
+            ? "bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20"
+            : "bg-zinc-800/80 backdrop-blur-sm text-zinc-200 border-zinc-700/50 hover:border-emerald-500/50"
+        )}
+      >
+        <MapPin className="w-4 h-4" strokeWidth={1.5} />
+        <span>{userContext.location.city}</span>
+      </button>
+
+      {/* Dropdown */}
+      {isOpen && (
         <>
-          <span className="flex-1">
-            {userContext.location.city}, {userContext.location.region}, {userContext.location.country}
-            {userContext.location.isOverridden && (
-              <span className="ml-2 text-xs text-amber-600">(Custom)</span>
+          <div 
+            className="fixed inset-0 z-40" 
+            onClick={() => setIsOpen(false)}
+          />
+          <div className="absolute top-full right-0 mt-2 w-80 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl shadow-black/50 z-50 overflow-hidden">
+            {/* Search Input */}
+            <div className="p-4 border-b border-zinc-800">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" strokeWidth={1.5} />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search any city worldwide..."
+                  className="w-full bg-zinc-800/50 border border-zinc-700/50 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20"
+                />
+              </div>
+            </div>
+
+            {/* Auto-detect */}
+            <div className="p-4">
+              <button
+                onClick={handleAutoDetect}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-zinc-800/50 transition-colors text-left"
+              >
+                <Sun className="w-4 h-4 text-zinc-400" strokeWidth={1.5} />
+                <span className="text-sm text-zinc-300">Auto-detect location</span>
+              </button>
+            </div>
+
+            {/* Search Results */}
+            {filteredCities.length > 0 && (
+              <div className="border-t border-zinc-800 max-h-60 overflow-y-auto">
+                {filteredCities.map((city) => (
+                  <button
+                    key={city}
+                    onClick={() => handleSearchSelect(city)}
+                    className="w-full flex items-center gap-3 px-6 py-3 hover:bg-zinc-800/50 transition-colors text-left"
+                  >
+                    <MapPin className="w-4 h-4 text-zinc-500" strokeWidth={1.5} />
+                    <span className="text-sm text-zinc-300">{city}</span>
+                  </button>
+                ))}
+              </div>
             )}
-          </span>
-          <button
-            onClick={handleEdit}
-            className="p-1 hover:bg-white rounded transition-colors"
-            title="Edit location"
-          >
-            <Edit2 className="w-3.5 h-3.5" />
-          </button>
+          </div>
         </>
-      ) : (
-        <div className="flex-1 flex items-center gap-2">
-          <input
-            type="text"
-            value={editedLocation.city}
-            onChange={(e) => setEditedLocation({ ...editedLocation, city: e.target.value })}
-            placeholder="City"
-            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-          <input
-            type="text"
-            value={editedLocation.region}
-            onChange={(e) => setEditedLocation({ ...editedLocation, region: e.target.value })}
-            placeholder="Region"
-            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-          <input
-            type="text"
-            value={editedLocation.country}
-            onChange={(e) => setEditedLocation({ ...editedLocation, country: e.target.value })}
-            placeholder="Country"
-            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-          <button
-            onClick={handleSave}
-            className="p-1 hover:bg-green-100 text-green-600 rounded transition-colors"
-            title="Save"
-          >
-            <Check className="w-4 h-4" />
-          </button>
-          <button
-            onClick={handleCancel}
-            className="p-1 hover:bg-red-100 text-red-600 rounded transition-colors"
-            title="Cancel"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
       )}
     </div>
   );

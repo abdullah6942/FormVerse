@@ -19,7 +19,7 @@ export default function Header() {
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <Sparkles className="w-6 h-6 text-primary-600" />
-            <span className="text-xl font-bold text-gray-900">ResearchForm AI</span>
+            <span className="text-xl font-bold text-gray-900">FormVerse</span>
           </Link>
 
           <div className="flex items-center gap-4">

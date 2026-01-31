@@ -1,6 +1,6 @@
 # PROMPTS.md
 
-This document contains all AI agent prompts used in the ResearchForm AI application, along with design rationale, edge case handling, and implementation details.
+This document contains all AI agent prompts used in the FormVerse application, along with design rationale, edge case handling, and implementation details.
 
 ---
 

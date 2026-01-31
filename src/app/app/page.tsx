@@ -9,8 +9,7 @@ import FormPreviewState from '@/components/states/FormPreviewState';
 import FormActiveState from '@/components/states/FormActiveState';
 import ResearchingState from '@/components/states/ResearchingState';
 import PresentingState from '@/components/states/PresentingState';
-import Header from '@/components/Header';
-import StateIndicator from '@/components/StateIndicator';
+import Sidebar from '@/components/Sidebar';
 import LocationOverride from '@/components/LocationOverride';
 
 export default function AppPage() {
@@ -41,21 +40,27 @@ export default function AppPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
+    <div className="flex h-screen bg-[#0a0a0a] overflow-hidden">
+      <Sidebar />
       
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-4">
-          <StateIndicator />
+      <main className="flex-1 flex flex-col overflow-hidden relative">
+        {/* Ambient glow */}
+        <div className="fixed inset-0 bg-gradient-radial pointer-events-none opacity-60" />
+        
+        {/* Location - Fixed Top Right */}
+        <div className="fixed top-4 right-4 z-30">
           <LocationOverride />
         </div>
         
-        <div className="mt-8">
-          {currentState === AppState.INTERVIEWING && <InterviewingState />}
-          {currentState === AppState.FORM_PREVIEW && <FormPreviewState />}
-          {currentState === AppState.FORM_ACTIVE && <FormActiveState />}
-          {currentState === AppState.RESEARCHING && <ResearchingState />}
-          {currentState === AppState.PRESENTING && <PresentingState />}
+        {/* Content */}
+        <div className="relative z-10 flex-1 overflow-y-auto">
+          <div className="max-w-3xl mx-auto px-4 py-8">
+            {currentState === AppState.INTERVIEWING && <InterviewingState />}
+            {currentState === AppState.FORM_PREVIEW && <FormPreviewState />}
+            {currentState === AppState.FORM_ACTIVE && <FormActiveState />}
+            {currentState === AppState.RESEARCHING && <ResearchingState />}
+            {currentState === AppState.PRESENTING && <PresentingState />}
+          </div>
         </div>
       </main>
     </div>
