@@ -76,7 +76,7 @@ A production-grade AI-powered application that interviews users conversationally
 
 - **Node.js**: 18+ (20+ recommended)
 - **Package Manager**: npm, yarn, or pnpm
-- **API Key**: OpenAI API key (required)
+- **API Key**: Anthropic (Claude) API key (required)
 
 ### Installation
 
@@ -96,8 +96,8 @@ A production-grade AI-powered application that interviews users conversationally
    Create a `.env.local` file in the root directory:
    
    ```env
-   # REQUIRED: OpenAI API Key
-   OPENAI_API_KEY=your_openai_api_key_here
+   # REQUIRED: Anthropic API Key
+   ANTHROPIC_API_KEY=your_anthropic_api_key_here
    
    # OPTIONAL: Serper API for web search (uses free tier if not provided)
    SERPER_API_KEY=your_serper_api_key_here
@@ -120,12 +120,12 @@ A production-grade AI-powered application that interviews users conversationally
 
 ## 🔑 API Keys Setup
 
-### OpenAI API Key (Required)
+### Anthropic API Key (Required)
 
 **Purpose**: Powers both Form Builder and Research AI agents
 
 **How to Get**:
-1. Visit [platform.openai.com](https://platform.openai.com)
+1. Visit [console.anthropic.com](https://console.anthropic.com)
 2. Sign up or log in to your account
 3. Navigate to API Keys section
 4. Click "Create new secret key"
@@ -133,7 +133,7 @@ A production-grade AI-powered application that interviews users conversationally
 
 **Cost**: Approximately $0.002-0.01 per research session (very affordable for testing)
 
-**Model Used**: GPT-4 Turbo for high-quality responses
+**Model Used**: Claude Haiku 4.5 (lightest/fastest Claude model)
 
 ### Serper API Key (Optional but Recommended)
 
@@ -295,7 +295,7 @@ test-ca/
 - Handles form revision requests
 - Safety guardrails against inappropriate content
 
-**Model**: GPT-4 Turbo (high-quality reasoning)
+**Model**: Claude Haiku 4.5 (fast, low-cost reasoning)
 
 **System Prompt Highlights**:
 - Conversational and friendly tone
@@ -318,7 +318,7 @@ test-ca/
 - Terminates when findings are sufficient
 - Generates context-aware summaries
 
-**Model**: GPT-4 Turbo (research quality)
+**Model**: Claude Haiku 4.5 (fast, low-cost research)
 
 **Available Tools**:
 - `web_search` - General web research via Serper API
@@ -566,7 +566,7 @@ npm run reinstall        # Clean and reinstall dependencies
 
 **AI & Agents**:
 - Mastra Core (latest) - Agent orchestration
-- OpenAI GPT-4 Turbo - AI model
+- Anthropic Claude Haiku 4.5 - AI model
 - Zod - Schema validation
 
 **UI & Styling**:
@@ -664,7 +664,7 @@ npm run reinstall        # Clean and reinstall dependencies
 
 **Required**:
 ```env
-OPENAI_API_KEY=sk-...    # OpenAI API key for agents
+ANTHROPIC_API_KEY=sk-ant-...    # Anthropic API key for agents
 ```
 
 **Optional**:
@@ -944,7 +944,7 @@ Expected: Agent declines and suggests legitimate queries
 **1. Agent Architecture & Mastra Implementation**
 - Why separate Form Builder and Research agents?
 - How do agents communicate state and context?
-- Why GPT-4 Turbo over other models?
+- Why Claude Haiku 4.5 over other models?
 - How is the agentic workflow structured?
 - Tool selection strategy and execution flow
 
@@ -1116,7 +1116,7 @@ Vercel is the recommended platform for Next.js applications with zero configurat
    
    In Vercel Dashboard → Settings → Environment Variables:
    ```
-   OPENAI_API_KEY=sk-proj-...
+   ANTHROPIC_API_KEY=sk-ant-...
    SERPER_API_KEY=...
    IPGEOLOCATION_API_KEY=...
    NEXT_PUBLIC_BASE_URL=https://your-domain.vercel.app
@@ -1230,7 +1230,7 @@ CMD ["npm", "start"]
 - [Best Practices](https://docs.pmnd.rs/zustand/guides/best-practices)
 
 **AI & Prompting**:
-- [OpenAI API Documentation](https://platform.openai.com/docs)
+- [Anthropic API Documentation](https://docs.anthropic.com)
 - [Prompt Engineering Guide](https://www.promptingguide.ai/)
 - [LangChain Concepts](https://python.langchain.com/docs/concepts/)
 
@@ -1293,9 +1293,9 @@ const validateFindings = createStep({
 
 **Common Issues**:
 
-1. **"OpenAI API Error: Invalid API Key"**
+1. **"Anthropic API Error: Invalid API Key"**
    ```
-   Solution: Check .env.local file exists and has correct OPENAI_API_KEY
+   Solution: Check .env.local file exists and has correct ANTHROPIC_API_KEY
    ```
 
 2. **"Cannot connect to location API"**

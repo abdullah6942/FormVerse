@@ -33,7 +33,7 @@ A: Multi-layer approach:
 
 **Q: What about rate limiting?**
 A: 
-1. OpenAI has built-in rate limits (tier-based)
+1. Anthropic has built-in rate limits (tier-based)
 2. Client-side debouncing for user input
 3. Loading states prevent duplicate requests
 4. Could add Redis-based rate limiting for production
